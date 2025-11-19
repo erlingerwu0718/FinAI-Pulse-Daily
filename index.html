@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinAI Pulse | 全球金融AI动态 (Live Demo)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        [x-cloak] { display: none !important; }
+        .line-clamp-3 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans" x-data="appData()">
+
+    <!-- 顶部导航 -->
+    <header class="fixed w-full z-50 glass border-b border-slate-200 transition-all duration-300" :class="{'shadow-sm': true}">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-2">
+                    <div class="bg-blue-600 text-white p-1.5 rounded-lg">
+                        <i class="fa-solid fa-wave-square text-lg"></i>
+                    </div>
+                    <span class="font-bold text-xl tracking-tight">FinAI <span class="text-blue-600">Pulse</span></span>
+                </div>
+                <div class="text-xs md:text-sm text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+                    <i class="fa-solid fa-satellite-dish text-green-500 mr-1"></i> 数据更新: <span x-text="lastUpdated"></span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容 -->
+    <main class="pt-24 pb-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <!-- 顶部：今日AI摘要 (AI Generated Briefing) -->
+        <div class="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-6 md:p-8 text-white shadow-xl mb-10 relative overflow-hidden">
+            <div class="absolute top-0 right-0 opacity-10 transform translate-x-10 -translate-y-10">
+                <i class="fa-solid fa-robot text-9xl"></i>
+            </div>
+            <div class="relative z-10">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2 text-blue-400">
+                    <i class="fa-solid fa-bolt"></i> 今日核心情报 (Daily Briefing)
+                </h2>
+                <div class="grid md:grid-cols-3 gap-6 border-t border-slate-700 pt-6">
+                    <div>
+                        <div class="text-2xl font-bold text-white mb-1">67%</div>
+                        <div class="text-sm text-slate-400 mb-2">CFO 信心指数</div>
+                        <p class="text-sm text-slate-300 leading-relaxed">Gartner 最新调查显示，尽管AI采用率增长放缓，但在已应用AI的财务领导者中，67%的人比去年更乐观。</p>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-green-400 mb-1">裁员涨薪</div>
+                        <div class="text-sm text-slate-400 mb-2">Klarna 效率改革</div>
+                        <p class="text-sm text-slate-300 leading-relaxed">BNPL巨头 Klarna 宣称通过AI节省成本，员工人数减半的同时，剩余员工平均薪资上涨了60%。</p>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-blue-400 mb-1">Agentic AI</div>
+                        <div class="text-sm text-slate-400 mb-2">Ramp 新工具</div>
+                        <p class="text-sm text-slate-300 leading-relaxed">Fintech公司 Ramp 估值达320亿美元，刚刚发布了用于财务自动化的“代理工作流(Agentic)”工具。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 过滤器 -->
+        <div class="flex flex-wrap gap-2 mb-8">
+            <template x-for="cat in categories">
+                <button 
+                    @click="currentFilter = cat.id"
+                    :class="currentFilter === cat.id ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-200' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'"
+                    class="px-5 py-2 rounded-full text-sm font-medium transition-all duration-200"
+                    x-text="cat.name">
+                </button>
+            </template>
+        </div>
+
+        <!-- 内容瀑布流 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <template x-for="item in filteredItems" :key="item.id">
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col h-full group" @click="openModal(item)">
+                    
+                    <!-- 卡片头部 -->
+                    <div class="px-5 pt-5 pb-2 flex justify-between items-center">
+                        <span :class="sourceConfig(item.source).class" class="text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider flex items-center gap-1">
+                            <i :class="sourceConfig(item.source).icon"></i>
+                            <span x-text="item.source"></span>
+                        </span>
+                        <span class="text-xs text-slate-400" x-text="item.time"></span>
+                    </div>
+                    
+                    <!-- 卡片内容 -->
+                    <div class="p-5 flex-1 flex flex-col">
+                        <h3 class="font-bold text-lg text-slate-800 mb-3 leading-snug group-hover:text-blue-600 transition-colors" x-text="item.title"></h3>
+                        
+                        <!-- 摘要 -->
+                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 mb-4 flex-1">
+                            <p class="text-sm text-slate-600 line-clamp-3 leading-relaxed" x-text="item.summary"></p>
+                        </div>
+                        
+                        <!-- 底部标签 -->
+                        <div class="flex flex-wrap gap-2 mt-auto pt-2 border-t border-slate-100">
+                            <template x-for="tag in item.tags">
+                                <span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-medium" x-text="'#'+tag"></span>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </main>
+
+    <!-- 详情模态框 -->
+    <div x-show="isModalOpen" x-cloak 
+         class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+         x-transition.opacity>
+        <div @click.away="isModalOpen = false" 
+             class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto relative animate-fade-in-up">
+            
+            <!-- 关闭按钮 -->
+            <button @click="isModalOpen = false" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors">
+                <i class="fa-solid fa-times"></i>
+            </button>
+            
+            <template x-if="selectedItem">
+                <div class="p-8">
+                    <!-- 模态框头部 -->
+                    <div class="flex items-center gap-3 mb-6">
+                        <span :class="sourceConfig(selectedItem.source).class" class="text-xs font-bold px-2 py-1 rounded uppercase" x-text="selectedItem.source"></span>
+                        <span class="text-slate-400 text-sm" x-text="selectedItem.time"></span>
+                    </div>
+                    
+                    <h2 class="text-2xl md:text-3xl font-bold text-slate-900 mb-6 leading-tight" x-text="selectedItem.title"></h2>
+                    
+                    <!-- AI 深度分析 -->
+                    <div class="bg-blue-50/50 p-6 rounded-xl border border-blue-100 mb-8">
+                        <h4 class="text-blue-800 font-bold mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-microchip"></i> AI 深度解读
+                        </h4>
+                        <p class="text-slate-700 leading-relaxed text-base" x-text="selectedItem.ai_analysis || selectedItem.summary"></p>
+                        
+                        <div class="mt-4 flex gap-4">
+                            <div class="flex flex-col">
+                                <span class="text-xs text-slate-400 uppercase font-bold">情感倾向</span>
+                                <span class="text-sm font-semibold text-green-600" x-text="selectedItem.sentiment || '中性 (Neutral)'"></span>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-xs text-slate-400 uppercase font-bold">相关领域</span>
+                                <span class="text-sm font-semibold text-slate-700" x-text="selectedItem.tags[0]"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 模拟的原文内容 -->
+                    <div class="prose prose-slate max-w-none mb-8">
+                        <p class="text-slate-500 italic">以下是原文内容的预览...</p>
+                        <p class="text-slate-700" x-text="selectedItem.summary + ' 具体来说，该文章探讨了金融机构在当前市场环境下如何平衡风险与创新。技术层面上，提到了Transformer架构在时间序列预测中的最新应用...'"></p>
+                    </div>
+
+                    <div class="flex justify-end pt-6 border-t border-slate-100">
+                        <a :href="selectedItem.link" target="_blank" class="inline-flex items-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-xl hover:bg-blue-600 transition-colors font-medium shadow-lg shadow-blue-900/20">
+                            阅读原文 <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+                        </a>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <script>
+        function appData() {
+            return {
+                lastUpdated: '2025-11-19 15:08', // 模拟当前时间
+                currentFilter: 'all',
+                isModalOpen: false,
+                selectedItem: null,
+                categories: [
+                    { id: 'all', name: '全部动态' },
+                    { id: 'paper', name: '学术/ArXiv' },
+                    { id: 'news', name: '市场新闻' },
+                    { id: 'video', name: '视频解读' }
+                ],
+                // 这里是刚刚抓取到的真实数据，直接嵌入
+                items: [
+                    { 
+                        id: 1, 
+                        source: 'ArXiv', 
+                        type: 'paper', 
+                        title: 'From Deep Learning to LLMs: A Survey of AI in Quantitative Investment', 
+                        time: '2025-03', 
+                        link: 'https://arxiv.org/abs/2503.21422',
+                        tags: ['量化投资', 'LLM', 'Agent'], 
+                        summary: '这篇最新的综述论文详细讨论了从深度学习到大语言模型的范式转变。核心观点是：未来的量化投资将不仅仅是预测价格，而是利用AI Agent处理非结构化数据并自动执行交易。',
+                        ai_analysis: '该论文标志着学术界对“Agentic Workflow”在金融领域应用的正式认可。对于量化团队来说，这意味着技术栈需要从单纯的数值模型向 NLP + 强化学习混合模型转型。',
+                        sentiment: '技术革新 (Positive)'
+                    },
+                    { 
+                        id: 2, 
+                        source: 'News', 
+                        type: 'news', 
+                        title: 'Gartner 2025 调查：67% 的财务领导者对 AI 更加乐观', 
+                        time: '1天前', 
+                        link: 'https://www.gartner.com',
+                        tags: ['CFO', '企业应用'], 
+                        summary: '尽管 AI 采用率并没有爆炸式增长（仅从58%增至59%），但使用者的信心大幅提升。主要应用场景集中在知识管理和应付账款自动化。',
+                        ai_analysis: '这表明 AI 在金融领域的应用已经过了“炒作期”，进入了“深水区”。企业不再盲目部署，而是关注实际 ROI。对于 SaaS 创业者，解决具体的流程痛点比泛泛的“AI 助手”更有市场。',
+                        sentiment: '稳健增长 (Positive)'
+                    },
+                    { 
+                        id: 3, 
+                        source: 'News', 
+                        type: 'news', 
+                        title: 'Klarna 称 AI 助其缩减一半员工并大幅涨薪', 
+                        time: '2025-11-18', 
+                        link: 'https://www.theguardian.com',
+                        tags: ['裁员', '效率', 'Fintech'], 
+                        summary: 'BNPL 巨头 Klarna CEO 表示，AI 相关储蓄使公司能够将员工薪资提高近 60%，但同时也暗示在过去三年中员工人数减少了近一半。',
+                        ai_analysis: '这是 AI 替代白领工作的最直接案例。对于金融从业者来说，这是一个巨大的警示：如果不掌握 AI 工具，被替代的风险正在加剧。同时也利好那些提供 AI 提效工具的公司。',
+                        sentiment: '争议 (Controversial)'
+                    },
+                    { 
+                        id: 4, 
+                        source: 'News', 
+                        type: 'news', 
+                        title: 'Ramp 发布 Agentic AI 工具，估值升至 320 亿美元', 
+                        time: '2025-11-18', 
+                        link: 'https://fintech.global',
+                        tags: ['融资', 'Agent', 'B2B'], 
+                        summary: 'Ramp 推出了新的 AI 驱动代理工具，旨在减少低效和自动化耗时的财务任务。该产品是针对财务团队日益增长的运营压力而开发的。',
+                        ai_analysis: 'Agentic AI（代理式AI）是 2025 年的核心主题。Ramp 的高估值证明了资本市场极其看好 AI 在自动化复杂财务流程（如报销、审计、合规）方面的能力。',
+                        sentiment: '极度利好 (Bullish)'
+                    },
+                    { 
+                        id: 5, 
+                        source: 'ArXiv', 
+                        type: 'paper', 
+                        title: 'Decision-informed Neural Networks for Portfolio Optimization', 
+                        time: '2025-02', 
+                        link: 'https://arxiv.org',
+                        tags: ['投资组合', '深度学习'], 
+                        summary: '提出了一种将大语言模型集成到投资组合优化中的新神经网络架构，旨在结合文本情绪与市场数据进行决策。',
+                        ai_analysis: '传统金融模型往往忽略文本信息，而纯 NLP 模型不懂数学。这篇论文尝试将两者结合，是目前学界的一个热门方向（Multimodal Finance）。',
+                        sentiment: '技术探索 (Neutral)'
+                    },
+                    { 
+                        id: 6, 
+                        source: 'YouTube', 
+                        type: 'video', 
+                        title: 'Spot New Quant Finance Strategies with Ollama', 
+                        time: '2025-05', 
+                        link: 'https://youtube.com',
+                        tags: ['教程', '本地部署'], 
+                        summary: '教程：如何使用本地运行的开源模型 (Ollama + Gemma) 来自动阅读和总结 ArXiv 上的量化金融论文，无需 API 费用。',
+                        ai_analysis: '这反映了“去中心化 AI”的趋势。金融机构出于数据隐私考虑，越来越倾向于在本地部署小参数模型（SLM）而非调用 OpenAI 接口。',
+                        sentiment: '实用 (Positive)'
+                    }
+                ],
+                get filteredItems() {
+                    if (this.currentFilter === 'all') return this.items;
+                    return this.items.filter(i => i.type === this.currentFilter);
+                },
+                sourceConfig(source) {
+                    const configs = {
+                        'ArXiv': { class: 'bg-red-50 text-red-600 border border-red-100', icon: 'fa-solid fa-graduation-cap' },
+                        'YouTube': { class: 'bg-red-50 text-red-600 border border-red-100', icon: 'fa-brands fa-youtube' },
+                        'News': { class: 'bg-blue-50 text-blue-600 border border-blue-100', icon: 'fa-regular fa-newspaper' },
+                        'WeChat': { class: 'bg-green-50 text-green-600 border border-green-100', icon: 'fa-brands fa-weixin' }
+                    };
+                    return configs[source] || { class: 'bg-slate-100 text-slate-600', icon: 'fa-solid fa-link' };
+                },
+                openModal(item) {
+                    this.selectedItem = item;
+                    this.isModalOpen = true;
+                    document.body.style.overflow = 'hidden';
+                },
+                closeModal() {
+                    this.isModalOpen = false;
+                    document.body.style.overflow = 'auto';
+                }
+            }
+        }
+        
+        // 监听 Alpine 初始化
+        document.addEventListener('alpine:init', () => {
+            Alpine.watch('isModalOpen', value => {
+                if(!value) document.body.style.overflow = 'auto';
+            });
+        });
+    </script>
+</body>
+</html>
