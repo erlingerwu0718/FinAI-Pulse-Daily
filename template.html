@@ -11,6 +11,7 @@
         .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
         [x-cloak] { display: none !important; }
         .line-clamp-3 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+        .line-clamp-2 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans" x-data="appData()">
@@ -34,22 +35,25 @@
 
     <main class="pt-24 pb-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        <!-- ⚡️ 动态 Dashboard (取最新的3条数据) -->
+        <!-- ⚡️ Dashboard (显示双语) -->
         <div class="bg-slate-900 rounded-2xl p-6 md:p-8 text-white shadow-xl mb-10 relative overflow-hidden">
             <div class="relative z-10">
                 <h2 class="text-lg font-bold mb-6 flex items-center gap-2 text-blue-400">
                     <i class="fa-solid fa-bolt"></i> 今日重点 (Top 3 Headlines)
                 </h2>
-                <!-- 自动读取 items 的前3个 -->
                 <div class="grid md:grid-cols-3 gap-6 border-t border-slate-700 pt-6">
                     <template x-for="topItem in items.slice(0, 3)" :key="topItem.id">
-                        <div @click="openModal(topItem)" class="cursor-pointer hover:bg-slate-800 p-3 rounded-lg transition-colors">
+                        <div @click="openModal(topItem)" class="cursor-pointer hover:bg-slate-800 p-3 rounded-lg transition-colors group">
                             <div class="flex items-center gap-2 mb-2">
                                 <span class="text-xs font-bold px-1.5 py-0.5 rounded bg-blue-900 text-blue-300" x-text="topItem.source"></span>
                                 <span class="text-xs text-slate-400" x-text="topItem.time"></span>
                             </div>
-                            <h3 class="font-bold text-white mb-2 leading-snug line-clamp-2" x-text="topItem.title"></h3>
-                            <p class="text-sm text-slate-400 line-clamp-2" x-text="topItem.summary"></p>
+                            <!-- 中文标题 -->
+                            <h3 class="font-bold text-white mb-1 leading-snug line-clamp-2 group-hover:text-blue-400 transition-colors" x-text="topItem.title"></h3>
+                            <!-- 英文原标题 (小字) -->
+                            <p class="text-xs text-slate-400 font-serif italic line-clamp-2 mb-2" x-text="topItem.title_en"></p>
+                            
+                            <p class="text-sm text-slate-500 line-clamp-2" x-text="topItem.summary"></p>
                         </div>
                     </template>
                 </div>
@@ -68,7 +72,7 @@
             </template>
         </div>
 
-        <!-- 瀑布流 (显示全部) -->
+        <!-- 瀑布流列表 (双语) -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <template x-for="item in filteredItems" :key="item.id">
                 <div class="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col h-full group" @click="openModal(item)">
@@ -80,7 +84,11 @@
                         <span class="text-xs text-slate-400" x-text="item.time"></span>
                     </div>
                     <div class="p-5 flex-1 flex flex-col">
-                        <h3 class="font-bold text-lg text-slate-800 mb-3 leading-snug group-hover:text-blue-600 transition-colors line-clamp-3" x-text="item.title"></h3>
+                        <!-- 中文标题 -->
+                        <h3 class="font-bold text-lg text-slate-800 mb-1 leading-snug group-hover:text-blue-600 transition-colors line-clamp-2" x-text="item.title"></h3>
+                        <!-- 英文原标题 -->
+                        <h4 class="text-sm text-slate-500 font-serif leading-snug mb-3 line-clamp-2 border-l-2 border-slate-200 pl-2" x-text="item.title_en"></h4>
+                        
                         <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 mb-4 flex-1">
                             <p class="text-sm text-slate-600 line-clamp-3 leading-relaxed" x-text="item.summary"></p>
                         </div>
@@ -90,7 +98,7 @@
         </div>
     </main>
 
-    <!-- 详情模态框 -->
+    <!-- 详情模态框 (双语) -->
     <div x-show="isModalOpen" x-cloak 
          class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
          x-transition.opacity>
@@ -105,12 +113,14 @@
                         <span :class="sourceConfig(selectedItem.source).class" class="text-xs font-bold px-2 py-1 rounded uppercase" x-text="selectedItem.source"></span>
                         <span class="text-slate-400 text-sm" x-text="selectedItem.time"></span>
                     </div>
-                    <h2 class="text-2xl font-bold text-slate-900 mb-4 leading-tight" x-text="selectedItem.title"></h2>
-                    <!-- 显示英文原标题 -->
-                    <h3 class="text-sm text-slate-500 font-medium mb-6 italic" x-text="selectedItem.title_en || ''"></h3>
+                    
+                    <!-- 中文标题 -->
+                    <h2 class="text-2xl font-bold text-slate-900 mb-2 leading-tight" x-text="selectedItem.title"></h2>
+                    <!-- 英文标题 -->
+                    <h3 class="text-lg text-slate-500 font-serif mb-6 leading-snug" x-text="selectedItem.title_en"></h3>
                     
                     <div class="bg-blue-50/50 p-6 rounded-xl border border-blue-100 mb-8">
-                        <h4 class="text-blue-800 font-bold mb-3">中文摘要</h4>
+                        <h4 class="text-blue-800 font-bold mb-3">AI 中文摘要</h4>
                         <p class="text-slate-700 leading-relaxed" x-text="selectedItem.summary"></p>
                     </div>
                     <div class="flex justify-end pt-6 border-t border-slate-100">
@@ -133,6 +143,7 @@
                 selectedItem: null,
                 categories: [
                     { id: 'all', name: '全部动态' },
+                    { id: 'X', name: '大V观点' },
                     { id: 'Paper', name: '学术/ArXiv' },
                     { id: 'News', name: '市场新闻' }
                 ],
@@ -143,7 +154,8 @@
                 sourceConfig(source) {
                     const configs = {
                         'Paper': { class: 'bg-red-50 text-red-600 border border-red-100', icon: 'fa-solid fa-graduation-cap' },
-                        'News': { class: 'bg-blue-50 text-blue-600 border border-blue-100', icon: 'fa-regular fa-newspaper' }
+                        'News': { class: 'bg-blue-50 text-blue-600 border border-blue-100', icon: 'fa-regular fa-newspaper' },
+                        'X': { class: 'bg-slate-900 text-white border border-slate-800', icon: 'fa-brands fa-x-twitter' }
                     };
                     return configs[source] || { class: 'bg-slate-100 text-slate-600', icon: 'fa-solid fa-link' };
                 },
