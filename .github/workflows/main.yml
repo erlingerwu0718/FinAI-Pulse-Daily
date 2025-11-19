@@ -1,0 +1,39 @@
+name: Daily FinAI Update
+
+on:
+  schedule:
+    # 每天国际标准时间 16:00 运行 (即北京时间 00:00)
+    - cron: '0 16 * * *'
+  # 允许你手动点击按钮触发更新（方便测试）
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write  # 允许机器人修改代码(上传index.html)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run crawler
+        run: python main.py
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+          git add index.html
+          git commit -m "Auto-update content" || echo "No changes to commit"
+          git push
